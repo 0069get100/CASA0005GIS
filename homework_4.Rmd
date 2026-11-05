@@ -1,0 +1,62 @@
+---
+title: "Gender Inequality Analysis"
+author: "Siyu"
+date: "2026-11-05"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Load packages
+
+```{r}
+library(tidyverse)
+library(sf)
+library(janitor)
+library(countrycode)
+```
+
+## Read data
+
+```{r}
+HDI <- read_csv("data/HDR25_Composite_indices_complete_time_series.csv")
+
+World <- st_read("data/World_Countries_(Generalized)_2173680399808997149.geojson")
+```
+
+## GII change
+
+Calculate the change in GII between 2010 and 2019.
+
+```{r}
+HDI_selected <- HDI %>%
+  select(iso3, country, gii_2010, gii_2019) %>%
+  mutate(gii_change = gii_2019 - gii_2010,
+         iso2 = countrycode(iso3, "iso3c", "iso2c")) %>%
+  filter(!is.na(iso2))
+
+head(HDI_selected)
+```
+
+## Join data
+
+Join the GII data to world boundaries using ISO codes.
+
+```{r}
+World_GII <- World %>%
+  left_join(HDI_selected, by = c("ISO" = "iso2"))
+```
+
+## Check results
+
+```{r}
+nrow(World_GII)
+sum(!is.na(World_GII$gii_change))
+```
+
+The world boundary data has 251 records, but only 157 have valid GII changes.
+
+Some countries and territories could not be matched, and some GII values are missing.
